@@ -1,14 +1,51 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { currentUser } from '../data/mockData';
+import { UserRole } from '../types';
 
 interface User {
   id: string;
   email: string;
   fullName: string;
-  role: 'freelancer' | 'client' | 'team_member';
+  role: UserRole;
   avatar?: string;
   businessName?: string;
+  company?: string;
 }
+
+// Demo credentials for all roles
+export const DEMO_USERS: Record<UserRole, User & { password: string }> = {
+  freelancer: {
+    id: 'user-freelancer-001',
+    email: 'freelancer@flowlance.com',
+    password: 'Demo1234',
+    fullName: 'Alex Morgan',
+    role: 'freelancer',
+    businessName: 'Morgan Design Studio',
+  },
+  client: {
+    id: 'user-client-001',
+    email: 'client@company.com',
+    password: 'Demo1234',
+    fullName: 'Sarah Johnson',
+    role: 'client',
+    company: 'TechCorp Inc.',
+  },
+  team_member: {
+    id: 'user-team-001',
+    email: 'team@flowlance.com',
+    password: 'Demo1234',
+    fullName: 'Jordan Lee',
+    role: 'team_member',
+    businessName: 'Morgan Design Studio',
+  },
+  client_sub_user: {
+    id: 'user-client-sub-001',
+    email: 'reviewer@company.com',
+    password: 'Demo1234',
+    fullName: 'Mike Chen',
+    role: 'client_sub_user',
+    company: 'TechCorp Inc.',
+  },
+};
 
 interface AuthContextType {
   user: User | null;
@@ -59,19 +96,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setTimeout(checkAuth, 500);
   }, []);
 
-  const login = useCallback(async (email: string, _password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
 
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // For demo, we'll use the mock user
+    // Check if email matches any demo user
+    const demoUser = Object.values(DEMO_USERS).find(
+      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    );
+
+    if (demoUser) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userWithoutPassword } = demoUser;
+      setUser(userWithoutPassword);
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      setIsLoading(false);
+      return;
+    }
+
+    // For any other email, default to freelancer role (for demo purposes)
     const loggedInUser: User = {
-      id: currentUser.id,
+      id: `user-${Date.now()}`,
       email: email,
-      fullName: currentUser.fullName,
+      fullName: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
       role: 'freelancer',
-      businessName: currentUser.businessName,
+      businessName: 'My Business',
     };
 
     setUser(loggedInUser);

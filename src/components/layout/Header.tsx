@@ -10,13 +10,13 @@ import {
   Box,
   Typography,
   Divider,
-  Avatar,
   ListItemIcon,
   ListItemText,
   useTheme,
   alpha,
   Tooltip,
   useMediaQuery,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,11 +27,21 @@ import {
   CheckCircle,
   Error as ErrorIcon,
   AttachMoney,
+  SwapHoriz,
 } from '@mui/icons-material';
 import { SearchInput, UserAvatar, Logo } from '../common';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { formatRelativeTime } from '../../utils/helpers';
+import { UserRole } from '../../types';
+
+// Role display configuration
+const roleDisplayConfig: Record<UserRole, { label: string; color: string }> = {
+  freelancer: { label: 'Owner', color: '#6366F1' },
+  client: { label: 'Client', color: '#10B981' },
+  team_member: { label: 'Team', color: '#F59E0B' },
+  client_sub_user: { label: 'Reviewer', color: '#8B5CF6' },
+};
 
 const DRAWER_WIDTH = 260;
 
@@ -157,9 +167,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <Typography variant="body2" fontWeight={600} color="text.primary">
               {user?.fullName || 'User'}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Pro Plan
-            </Typography>
+            <Chip
+              label={roleDisplayConfig[user?.role || 'freelancer'].label}
+              size="small"
+              sx={{
+                height: 18,
+                fontSize: '0.65rem',
+                backgroundColor: alpha(roleDisplayConfig[user?.role || 'freelancer'].color, 0.1),
+                color: roleDisplayConfig[user?.role || 'freelancer'].color,
+                fontWeight: 600,
+              }}
+            />
           </Box>
         </Box>
 
@@ -172,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           PaperProps={{
             sx: {
-              width: 220,
+              width: 240,
               mt: 1,
             },
           }}
@@ -181,9 +199,21 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <Typography variant="subtitle2" fontWeight={600}>
               {user?.fullName}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
               {user?.email}
             </Typography>
+            <Chip
+              label={roleDisplayConfig[user?.role || 'freelancer'].label}
+              size="small"
+              sx={{
+                mt: 0.5,
+                height: 20,
+                fontSize: '0.7rem',
+                backgroundColor: alpha(roleDisplayConfig[user?.role || 'freelancer'].color, 0.1),
+                color: roleDisplayConfig[user?.role || 'freelancer'].color,
+                fontWeight: 600,
+              }}
+            />
           </Box>
           <Divider />
           <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
@@ -192,13 +222,24 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </ListItemIcon>
             <ListItemText>Profile</ListItemText>
           </MenuItem>
-          <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
-            <ListItemIcon>
-              <Settings fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Settings</ListItemText>
-          </MenuItem>
+          {(user?.role === 'freelancer' || user?.role === 'team_member') && (
+            <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
+              <ListItemIcon>
+                <Settings fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Settings</ListItemText>
+            </MenuItem>
+          )}
           <Divider />
+          <MenuItem
+            onClick={() => { handleClose(); navigate('/login'); }}
+            sx={{ color: 'primary.main' }}
+          >
+            <ListItemIcon>
+              <SwapHoriz fontSize="small" sx={{ color: 'primary.main' }} />
+            </ListItemIcon>
+            <ListItemText>Switch Role (Demo)</ListItemText>
+          </MenuItem>
           <MenuItem onClick={handleLogout}>
             <ListItemIcon>
               <Logout fontSize="small" />

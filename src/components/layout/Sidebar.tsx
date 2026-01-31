@@ -13,6 +13,7 @@ import {
   useMediaQuery,
   alpha,
   IconButton,
+  Chip,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -22,9 +23,13 @@ import {
   Settings,
   Close,
   Stars,
+  RateReview,
+  Visibility,
 } from '@mui/icons-material';
 import { Logo } from '../common';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
 
 const DRAWER_WIDTH = 260;
 
@@ -33,23 +38,84 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+// Role badge configuration
+const roleBadgeConfig: Record<UserRole, { label: string; color: string }> = {
+  freelancer: { label: 'Owner', color: '#6366F1' },
+  client: { label: 'Client', color: '#10B981' },
+  team_member: { label: 'Team', color: '#F59E0B' },
+  client_sub_user: { label: 'Reviewer', color: '#8B5CF6' },
+};
+
+// Menu items with role-based access
+interface MenuItem {
+  label: string;
+  icon: React.ElementType;
+  path: string;
+  roles: UserRole[];
+}
+
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const { sidebarOpen } = useApp();
+  const { user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const menuItems = [
-    { label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
-    { label: 'Projects', icon: FolderOpen, path: '/projects' },
-    { label: 'Clients', icon: People, path: '/clients' },
-    { label: 'Invoices', icon: Receipt, path: '/invoices' },
+  const userRole = user?.role || 'freelancer';
+
+  // Define menu items with role-based access
+  const allMenuItems: MenuItem[] = [
+    {
+      label: 'Dashboard',
+      icon: DashboardIcon,
+      path: '/dashboard',
+      roles: ['freelancer', 'client', 'team_member', 'client_sub_user'],
+    },
+    {
+      label: 'Projects',
+      icon: FolderOpen,
+      path: '/projects',
+      roles: ['freelancer', 'client', 'team_member', 'client_sub_user'],
+    },
+    {
+      label: 'Clients',
+      icon: People,
+      path: '/clients',
+      roles: ['freelancer', 'team_member'],
+    },
+    {
+      label: 'Invoices',
+      icon: Receipt,
+      path: '/invoices',
+      roles: ['freelancer', 'client', 'team_member', 'client_sub_user'],
+    },
+    {
+      label: 'Approvals',
+      icon: RateReview,
+      path: '/projects?filter=pending',
+      roles: ['client'],
+    },
   ];
 
-  const secondaryItems = [
-    { label: 'Settings', icon: Settings, path: '/settings' },
+  const allSecondaryItems: MenuItem[] = [
+    {
+      label: 'Settings',
+      icon: Settings,
+      path: '/settings',
+      roles: ['freelancer', 'client', 'team_member'],
+    },
+    {
+      label: 'View Only',
+      icon: Visibility,
+      path: '/settings',
+      roles: ['client_sub_user'],
+    },
   ];
+
+  // Filter menu items based on user role
+  const menuItems = allMenuItems.filter((item) => item.roles.includes(userRole));
+  const secondaryItems = allSecondaryItems.filter((item) => item.roles.includes(userRole));
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -91,6 +157,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             <Close />
           </IconButton>
         )}
+      </Box>
+
+      {/* Role Badge */}
+      <Box sx={{ px: 2.5, pb: 1 }}>
+        <Chip
+          label={roleBadgeConfig[userRole].label}
+          size="small"
+          sx={{
+            backgroundColor: alpha(roleBadgeConfig[userRole].color, 0.1),
+            color: roleBadgeConfig[userRole].color,
+            fontWeight: 600,
+            fontSize: '0.75rem',
+          }}
+        />
       </Box>
 
       <Divider sx={{ mx: 2 }} />
@@ -163,39 +243,83 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         </List>
       </Box>
 
-      {/* Pro Features Promo */}
-      <Box sx={{ px: 2, pb: 2 }}>
-        <Box
-          sx={{
-            p: 2.5,
-            borderRadius: 3,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 100%)`,
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Stars sx={{ fontSize: 18, color: 'primary.main' }} />
-            <Typography variant="subtitle2" fontWeight={600} color="primary.main">
-              Pro Plan
+      {/* Pro Features Promo - Only for freelancers */}
+      {userRole === 'freelancer' && (
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Box
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 100%)`,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Stars sx={{ fontSize: 18, color: 'primary.main' }} />
+              <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                Pro Plan
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              Unlimited clients, custom branding & more
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'primary.main',
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+              onClick={() => navigate('/settings/billing')}
+            >
+              Upgrade now →
             </Typography>
           </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-            Unlimited clients, custom branding & more
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'primary.main',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { textDecoration: 'underline' },
-            }}
-            onClick={() => navigate('/settings/billing')}
-          >
-            Upgrade now →
-          </Typography>
         </Box>
-      </Box>
+      )}
+
+      {/* Client Portal Info - For clients */}
+      {(userRole === 'client' || userRole === 'client_sub_user') && (
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Box
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              background: `linear-gradient(135deg, ${alpha('#10B981', 0.1)} 0%, ${alpha('#10B981', 0.05)} 100%)`,
+              border: `1px solid ${alpha('#10B981', 0.1)}`,
+            }}
+          >
+            <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#10B981', mb: 0.5 }}>
+              Client Portal
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              You're viewing as a client. Review deliverables and manage payments here.
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* Team Member Info */}
+      {userRole === 'team_member' && (
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Box
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.1)} 0%, ${alpha('#F59E0B', 0.05)} 100%)`,
+              border: `1px solid ${alpha('#F59E0B', 0.1)}`,
+            }}
+          >
+            <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#F59E0B', mb: 0.5 }}>
+              Team Access
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              You have team member access. Contact the owner for full permissions.
+            </Typography>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 

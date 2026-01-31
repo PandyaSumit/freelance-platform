@@ -10,18 +10,76 @@ import {
   InputAdornment,
   Alert,
   CircularProgress,
+  Card,
+  CardContent,
+  Grid,
+  alpha,
+  useTheme,
+  Chip,
 } from '@mui/material';
-import { Visibility, VisibilityOff, Google, Apple } from '@mui/icons-material';
+import {
+  Visibility,
+  VisibilityOff,
+  Google,
+  Apple,
+  Person,
+  Business,
+  Groups,
+  SupervisorAccount,
+  ContentCopy,
+  CheckCircle,
+} from '@mui/icons-material';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { loginSchema, LoginFormValues } from '../../utils/validationSchemas';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, DEMO_USERS } from '../../context/AuthContext';
+import { UserRole } from '../../types';
+
+// Role configuration for demo cards
+const roleConfig: Record<UserRole, {
+  label: string;
+  description: string;
+  icon: React.ReactElement;
+  color: string;
+  features: string[];
+}> = {
+  freelancer: {
+    label: 'Freelancer',
+    description: 'Full platform access',
+    icon: <Person />,
+    color: '#6366F1',
+    features: ['Create projects', 'Manage clients', 'Send invoices', 'Full dashboard'],
+  },
+  client: {
+    label: 'Client',
+    description: 'View & approve work',
+    icon: <Business />,
+    color: '#10B981',
+    features: ['View projects', 'Approve deliverables', 'Pay invoices', 'Leave feedback'],
+  },
+  team_member: {
+    label: 'Team Member',
+    description: 'Collaborate on projects',
+    icon: <Groups />,
+    color: '#F59E0B',
+    features: ['View projects', 'Upload files', 'View clients', 'Limited settings'],
+  },
+  client_sub_user: {
+    label: 'Client Reviewer',
+    description: 'Review & comment only',
+    icon: <SupervisorAccount />,
+    color: '#8B5CF6',
+    features: ['View projects', 'Add comments', 'View invoices', 'No approvals'],
+  },
+};
 
 const LoginPage: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedRole, setCopiedRole] = useState<UserRole | null>(null);
 
   const formik = useFormik<LoginFormValues>({
     initialValues: {
@@ -41,6 +99,28 @@ const LoginPage: React.FC = () => {
       }
     },
   });
+
+  // Quick login with demo credentials
+  const handleDemoLogin = async (role: UserRole) => {
+    const demoUser = DEMO_USERS[role];
+    formik.setValues({ email: demoUser.email, password: demoUser.password });
+    try {
+      setError(null);
+      await login(demoUser.email, demoUser.password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Failed to login with demo credentials.');
+    }
+  };
+
+  // Copy credentials to clipboard
+  const handleCopyCredentials = (role: UserRole, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const demoUser = DEMO_USERS[role];
+    navigator.clipboard.writeText(`${demoUser.email} / ${demoUser.password}`);
+    setCopiedRole(role);
+    setTimeout(() => setCopiedRole(null), 2000);
+  };
 
   return (
     <Box>
@@ -210,26 +290,181 @@ const LoginPage: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Demo Credentials */}
-      <Box
-        sx={{
-          mt: 4,
-          p: 2,
-          borderRadius: 2,
-          backgroundColor: 'grey.50',
-          border: '1px solid',
-          borderColor: 'grey.200',
-        }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Demo credentials (for testing):
+      {/* Demo Credentials Section */}
+      <Box sx={{ mt: 4 }}>
+        <Divider sx={{ mb: 3 }}>
+          <Chip
+            label="Quick Demo Access"
+            size="small"
+            sx={{
+              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+              fontWeight: 600,
+            }}
+          />
+        </Divider>
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: 2, textAlign: 'center' }}
+        >
+          Click any role card to instantly login and explore the platform
         </Typography>
-        <Typography variant="body2" fontFamily="monospace">
-          Email: demo@flowlance.com
-        </Typography>
-        <Typography variant="body2" fontFamily="monospace">
-          Password: Demo1234
-        </Typography>
+
+        <Grid container spacing={2}>
+          {(Object.keys(roleConfig) as UserRole[]).map((role) => {
+            const config = roleConfig[role];
+            const demoUser = DEMO_USERS[role];
+            const isCopied = copiedRole === role;
+
+            return (
+              <Grid size={{ xs: 12, sm: 6 }} key={role}>
+                <Card
+                  sx={{
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    position: 'relative',
+                    overflow: 'visible',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 8px 24px ${alpha(config.color, 0.25)}`,
+                      borderColor: config.color,
+                      '& .role-icon': {
+                        transform: 'scale(1.1)',
+                        backgroundColor: config.color,
+                        color: '#fff',
+                      },
+                    },
+                  }}
+                  onClick={() => handleDemoLogin(role)}
+                >
+                  {/* Copy Button */}
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleCopyCredentials(role, e)}
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 1,
+                      backgroundColor: 'background.paper',
+                      boxShadow: 1,
+                      '&:hover': {
+                        backgroundColor: alpha(config.color, 0.1),
+                      },
+                    }}
+                  >
+                    {isCopied ? (
+                      <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
+                    ) : (
+                      <ContentCopy sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    )}
+                  </IconButton>
+
+                  <CardContent sx={{ p: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                      {/* Role Icon */}
+                      <Box
+                        className="role-icon"
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 2,
+                          backgroundColor: alpha(config.color, 0.1),
+                          color: config.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease-in-out',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {config.icon}
+                      </Box>
+
+                      {/* Role Info */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                          {config.label}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mb: 1 }}
+                        >
+                          {config.description}
+                        </Typography>
+
+                        {/* Credentials */}
+                        <Box
+                          sx={{
+                            backgroundColor: 'grey.50',
+                            borderRadius: 1,
+                            p: 1,
+                            mt: 1,
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            fontFamily="monospace"
+                            sx={{
+                              display: 'block',
+                              color: 'text.secondary',
+                              fontSize: '0.7rem',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {demoUser.email}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            fontFamily="monospace"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            Password: {demoUser.password}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Features Preview */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 0.5,
+                        mt: 1.5,
+                      }}
+                    >
+                      {config.features.slice(0, 3).map((feature, idx) => (
+                        <Chip
+                          key={idx}
+                          label={feature}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.65rem',
+                            backgroundColor: alpha(config.color, 0.08),
+                            color: config.color,
+                            fontWeight: 500,
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
       </Box>
     </Box>
   );
