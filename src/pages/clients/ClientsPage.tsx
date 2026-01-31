@@ -19,6 +19,7 @@ import {
   TextField,
   useTheme,
   alpha,
+  Alert,
 } from '@mui/material';
 import {
   Add,
@@ -31,12 +32,45 @@ import {
   Business,
 } from '@mui/icons-material';
 import { SearchInput, UserAvatar, EmptyState } from '../../components/common';
+import { useAuth } from '../../context/AuthContext';
 import { mockClients } from '../../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../../utils/helpers';
+import { UserRole } from '../../types';
+
+// Role-based page configuration
+const pageConfig: Record<'freelancer' | 'team_member', {
+  title: string;
+  subtitle: string;
+  canAdd: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  showRevenue: boolean;
+}> = {
+  freelancer: {
+    title: 'Clients',
+    subtitle: 'Manage your client relationships',
+    canAdd: true,
+    canEdit: true,
+    canDelete: true,
+    showRevenue: true,
+  },
+  team_member: {
+    title: 'Clients',
+    subtitle: 'View client information',
+    canAdd: false,
+    canEdit: false,
+    canDelete: false,
+    showRevenue: false,
+  },
+};
 
 const ClientsPage: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userRole = user?.role as 'freelancer' | 'team_member';
+  const config = pageConfig[userRole] || pageConfig.team_member;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -74,21 +108,30 @@ const ClientsPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={700} gutterBottom>
-            Clients
+            {config.title}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage your client relationships
+            {config.subtitle}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setAddDialogOpen(true)}
-          sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}
-        >
-          Add Client
-        </Button>
+        {config.canAdd && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setAddDialogOpen(true)}
+            sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}
+          >
+            Add Client
+          </Button>
+        )}
       </Box>
+
+      {/* Team member notice */}
+      {userRole === 'team_member' && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          You have view-only access to clients. Contact the account owner to add or edit clients.
+        </Alert>
+      )}
 
       {/* Search */}
       <Box sx={{ mb: 3 }}>
@@ -107,10 +150,12 @@ const ClientsPage: React.FC = () => {
           description={
             searchQuery
               ? `No clients match "${searchQuery}".`
-              : 'Add your first client to get started.'
+              : config.canAdd
+              ? 'Add your first client to get started.'
+              : 'No clients have been added yet.'
           }
           action={
-            !searchQuery
+            !searchQuery && config.canAdd
               ? { label: 'Add Client', onClick: () => setAddDialogOpen(true) }
               : undefined
           }
@@ -185,7 +230,7 @@ const ClientsPage: React.FC = () => {
                   <Box
                     sx={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gridTemplateColumns: config.showRevenue ? 'repeat(2, 1fr)' : '1fr',
                       gap: 2,
                       pt: 2,
                       borderTop: `1px solid ${theme.palette.divider}`,
@@ -199,14 +244,16 @@ const ClientsPage: React.FC = () => {
                         {client.activeProjects}
                       </Typography>
                     </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Total Paid
-                      </Typography>
-                      <Typography variant="h6" fontWeight={600} color="success.main">
-                        {formatCurrency(client.totalPaid)}
-                      </Typography>
-                    </Box>
+                    {config.showRevenue && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Total Paid
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color="success.main">
+                          {formatCurrency(client.totalPaid)}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
 
                   {/* Footer */}
@@ -222,7 +269,7 @@ const ClientsPage: React.FC = () => {
         </Grid>
       )}
 
-      {/* Context Menu */}
+      {/* Context Menu - Role-based */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -234,14 +281,18 @@ const ClientsPage: React.FC = () => {
           <ListItemIcon><Visibility fontSize="small" /></ListItemIcon>
           <ListItemText>View Projects</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-          <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
-          <ListItemIcon><Delete fontSize="small" color="error" /></ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
+        {config.canEdit && (
+          <MenuItem onClick={handleMenuClose}>
+            <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>
+        )}
+        {config.canDelete && (
+          <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
+            <ListItemIcon><Delete fontSize="small" color="error" /></ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Add Client Dialog */}

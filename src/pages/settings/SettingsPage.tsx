@@ -9,7 +9,6 @@ import {
   TextField,
   Button,
   Switch,
-  FormControlLabel,
   Grid,
   Divider,
   useTheme,
@@ -17,10 +16,12 @@ import {
   Avatar,
   IconButton,
   Chip,
+  Alert,
 } from '@mui/material';
-import { CameraAlt, Check, ContentCopy } from '@mui/icons-material';
+import { CameraAlt, ContentCopy } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { currentUser } from '../../data/mockData';
+import { UserRole } from '../../types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -34,9 +35,66 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   </Box>
 );
 
+// Role-based settings configuration
+interface SettingsTab {
+  label: string;
+  key: string;
+}
+
+const roleTabsConfig: Record<UserRole, SettingsTab[]> = {
+  freelancer: [
+    { label: 'Profile', key: 'profile' },
+    { label: 'Branding', key: 'branding' },
+    { label: 'Notifications', key: 'notifications' },
+    { label: 'Billing', key: 'billing' },
+  ],
+  client: [
+    { label: 'Profile', key: 'profile' },
+    { label: 'Notifications', key: 'notifications' },
+  ],
+  team_member: [
+    { label: 'Profile', key: 'profile' },
+    { label: 'Notifications', key: 'notifications' },
+  ],
+  client_sub_user: [
+    { label: 'Profile', key: 'profile' },
+  ],
+};
+
+const rolePageConfig: Record<UserRole, {
+  title: string;
+  subtitle: string;
+  canEditProfile: boolean;
+}> = {
+  freelancer: {
+    title: 'Settings',
+    subtitle: 'Manage your account and preferences',
+    canEditProfile: true,
+  },
+  client: {
+    title: 'Account Settings',
+    subtitle: 'Manage your profile and notifications',
+    canEditProfile: true,
+  },
+  team_member: {
+    title: 'Settings',
+    subtitle: 'Manage your profile and notifications',
+    canEditProfile: true,
+  },
+  client_sub_user: {
+    title: 'Profile',
+    subtitle: 'View your account information',
+    canEditProfile: false,
+  },
+};
+
 const SettingsPage: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
+  const userRole = user?.role || 'freelancer';
+  const tabs = roleTabsConfig[userRole];
+  const pageConfig = rolePageConfig[userRole];
+
   const [tabValue, setTabValue] = useState(0);
   const [brandColor, setBrandColor] = useState('#4F46E5');
 
@@ -47,38 +105,87 @@ const SettingsPage: React.FC = () => {
     weeklySummary: true,
   });
 
+  // Get current tab key
+  const currentTabKey = tabs[tabValue]?.key || 'profile';
+
+  // Different notification options per role
+  const freelancerNotifications = [
+    { key: 'emailOnApproval', label: 'When a client approves work', description: 'Get notified when deliverables are approved' },
+    { key: 'emailOnPaymentViewed', label: 'When an invoice is viewed', description: 'Know when clients see your invoices' },
+    { key: 'emailOnChangesRequested', label: 'When changes are requested', description: 'Get feedback notifications instantly' },
+    { key: 'weeklySummary', label: 'Weekly summary', description: 'Receive a weekly digest of all activity' },
+  ];
+
+  const clientNotifications = [
+    { key: 'emailOnApproval', label: 'Deliverable ready for review', description: 'Get notified when new work is uploaded' },
+    { key: 'emailOnPaymentViewed', label: 'Invoice reminders', description: 'Receive payment due reminders' },
+    { key: 'weeklySummary', label: 'Weekly project updates', description: 'Receive a weekly summary of project progress' },
+  ];
+
+  const teamMemberNotifications = [
+    { key: 'emailOnApproval', label: 'When work is approved', description: 'Get notified when clients approve deliverables' },
+    { key: 'emailOnChangesRequested', label: 'When changes are requested', description: 'Get feedback notifications instantly' },
+    { key: 'weeklySummary', label: 'Weekly summary', description: 'Receive a weekly digest of all activity' },
+  ];
+
+  const getNotificationOptions = () => {
+    switch (userRole) {
+      case 'client':
+      case 'client_sub_user':
+        return clientNotifications;
+      case 'team_member':
+        return teamMemberNotifications;
+      default:
+        return freelancerNotifications;
+    }
+  };
+
   return (
     <Box>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} gutterBottom>
-          Settings
+          {pageConfig.title}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage your account and preferences
+          {pageConfig.subtitle}
         </Typography>
       </Box>
+
+      {/* Role-specific alerts */}
+      {userRole === 'client_sub_user' && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          You have view-only access. Contact the primary account holder to make changes.
+        </Alert>
+      )}
+
+      {userRole === 'team_member' && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Some settings are managed by the account owner. Contact them for billing or branding changes.
+        </Alert>
+      )}
 
       {/* Settings Card */}
       <Card>
         <Box sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
           <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
-            <Tab label="Profile" />
-            <Tab label="Branding" />
-            <Tab label="Notifications" />
-            <Tab label="Billing" />
+            {tabs.map((tab) => (
+              <Tab key={tab.key} label={tab.label} />
+            ))}
           </Tabs>
         </Box>
 
         <CardContent sx={{ p: 4 }}>
           {/* Profile Tab */}
-          <TabPanel value={tabValue} index={0}>
+          {currentTabKey === 'profile' && (
             <Box sx={{ maxWidth: 600 }}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Profile Information
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                Update your personal details and business information.
+                {pageConfig.canEditProfile
+                  ? 'Update your personal details and information.'
+                  : 'View your profile information.'}
               </Typography>
 
               {/* Avatar */}
@@ -87,49 +194,91 @@ const SettingsPage: React.FC = () => {
                   <Avatar sx={{ width: 80, height: 80, fontSize: '2rem', bgcolor: 'primary.main' }}>
                     {user?.fullName?.charAt(0) || 'U'}
                   </Avatar>
-                  <IconButton
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      backgroundColor: 'background.paper',
-                      border: `2px solid ${theme.palette.divider}`,
-                      '&:hover': { backgroundColor: 'grey.100' },
-                    }}
-                  >
-                    <CameraAlt fontSize="small" />
-                  </IconButton>
+                  {pageConfig.canEditProfile && (
+                    <IconButton
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        backgroundColor: 'background.paper',
+                        border: `2px solid ${theme.palette.divider}`,
+                        '&:hover': { backgroundColor: 'grey.100' },
+                      }}
+                    >
+                      <CameraAlt fontSize="small" />
+                    </IconButton>
+                  )}
                 </Box>
                 <Box>
                   <Typography variant="subtitle1" fontWeight={600}>{user?.fullName}</Typography>
                   <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
+                  <Chip
+                    label={userRole.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    size="small"
+                    sx={{ mt: 0.5 }}
+                  />
                 </Box>
               </Box>
 
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField fullWidth label="Full Name" defaultValue={user?.fullName} />
+                  <TextField
+                    fullWidth
+                    label="Full Name"
+                    defaultValue={user?.fullName}
+                    disabled={!pageConfig.canEditProfile}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField fullWidth label="Email" defaultValue={user?.email} type="email" />
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    defaultValue={user?.email}
+                    type="email"
+                    disabled={!pageConfig.canEditProfile}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField fullWidth label="Phone" placeholder="+1 (555) 123-4567" />
+                  <TextField
+                    fullWidth
+                    label="Phone"
+                    placeholder="+1 (555) 123-4567"
+                    disabled={!pageConfig.canEditProfile}
+                  />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField fullWidth label="Business Name" defaultValue={currentUser.businessName} />
-                </Grid>
+                {(userRole === 'freelancer' || userRole === 'team_member') && (
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Business Name"
+                      defaultValue={user?.businessName || currentUser.businessName}
+                      disabled={!pageConfig.canEditProfile || userRole === 'team_member'}
+                    />
+                  </Grid>
+                )}
+                {(userRole === 'client' || userRole === 'client_sub_user') && (
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Company"
+                      defaultValue={user?.company || 'TechCorp Inc.'}
+                      disabled={!pageConfig.canEditProfile}
+                    />
+                  </Grid>
+                )}
               </Grid>
 
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="contained">Save Changes</Button>
-              </Box>
+              {pageConfig.canEditProfile && (
+                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button variant="contained">Save Changes</Button>
+                </Box>
+              )}
             </Box>
-          </TabPanel>
+          )}
 
-          {/* Branding Tab */}
-          <TabPanel value={tabValue} index={1}>
+          {/* Branding Tab - Only for freelancer */}
+          {currentTabKey === 'branding' && userRole === 'freelancer' && (
             <Box sx={{ maxWidth: 600 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
@@ -214,10 +363,10 @@ const SettingsPage: React.FC = () => {
                 <Button variant="contained">Save Changes</Button>
               </Box>
             </Box>
-          </TabPanel>
+          )}
 
           {/* Notifications Tab */}
-          <TabPanel value={tabValue} index={2}>
+          {currentTabKey === 'notifications' && (
             <Box sx={{ maxWidth: 600 }}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Email Notifications
@@ -227,12 +376,7 @@ const SettingsPage: React.FC = () => {
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {[
-                  { key: 'emailOnApproval', label: 'When a client approves work', description: 'Get notified when deliverables are approved' },
-                  { key: 'emailOnPaymentViewed', label: 'When an invoice is viewed', description: 'Know when clients see your invoices' },
-                  { key: 'emailOnChangesRequested', label: 'When changes are requested', description: 'Get feedback notifications instantly' },
-                  { key: 'weeklySummary', label: 'Weekly summary', description: 'Receive a weekly digest of all activity' },
-                ].map((item) => (
+                {getNotificationOptions().map((item) => (
                   <Box
                     key={item.key}
                     sx={{
@@ -249,17 +393,21 @@ const SettingsPage: React.FC = () => {
                       <Typography variant="body2" color="text.secondary">{item.description}</Typography>
                     </Box>
                     <Switch
-                      checked={notifications[item.key as keyof typeof notifications]}
+                      checked={notifications[item.key as keyof typeof notifications] ?? true}
                       onChange={(e) => setNotifications({ ...notifications, [item.key]: e.target.checked })}
                     />
                   </Box>
                 ))}
               </Box>
-            </Box>
-          </TabPanel>
 
-          {/* Billing Tab */}
-          <TabPanel value={tabValue} index={3}>
+              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button variant="contained">Save Preferences</Button>
+              </Box>
+            </Box>
+          )}
+
+          {/* Billing Tab - Only for freelancer */}
+          {currentTabKey === 'billing' && userRole === 'freelancer' && (
             <Box sx={{ maxWidth: 600 }}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Subscription
@@ -321,7 +469,7 @@ const SettingsPage: React.FC = () => {
                 <Button size="small">Update</Button>
               </Box>
             </Box>
-          </TabPanel>
+          )}
         </CardContent>
       </Card>
     </Box>

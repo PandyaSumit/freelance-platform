@@ -18,6 +18,7 @@ import {
   useTheme,
   alpha,
   LinearProgress,
+  Alert,
 } from '@mui/material';
 import {
   Add,
@@ -26,28 +27,96 @@ import {
   Edit,
   Delete,
   Archive,
-  FilterList,
+  ThumbUp,
+  ThumbDown,
+  Comment,
 } from '@mui/icons-material';
 import { SearchInput, UserAvatar, StatusBadge, EmptyState } from '../../components/common';
+import { useAuth } from '../../context/AuthContext';
 import { mockProjects } from '../../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../../utils/helpers';
-import { ProjectStatus } from '../../types';
+import { ProjectStatus, UserRole } from '../../types';
+
+// Role-based page configuration
+const pageConfig: Record<UserRole, {
+  title: string;
+  subtitle: string;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canApprove: boolean;
+  showPaymentProgress: boolean;
+}> = {
+  freelancer: {
+    title: 'Projects',
+    subtitle: 'Manage all your client projects in one place',
+    canCreate: true,
+    canEdit: true,
+    canDelete: true,
+    canApprove: false,
+    showPaymentProgress: true,
+  },
+  client: {
+    title: 'Your Projects',
+    subtitle: 'Review deliverables and track project progress',
+    canCreate: false,
+    canEdit: false,
+    canDelete: false,
+    canApprove: true,
+    showPaymentProgress: true,
+  },
+  team_member: {
+    title: 'Assigned Projects',
+    subtitle: 'View and collaborate on team projects',
+    canCreate: false,
+    canEdit: true,
+    canDelete: false,
+    canApprove: false,
+    showPaymentProgress: false,
+  },
+  client_sub_user: {
+    title: 'Shared Projects',
+    subtitle: 'Review project progress and add comments',
+    canCreate: false,
+    canEdit: false,
+    canDelete: false,
+    canApprove: false,
+    showPaymentProgress: false,
+  },
+};
 
 const ProjectsPage: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userRole = user?.role || 'freelancer';
+  const config = pageConfig[userRole];
+
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  const statusFilters: { label: string; value: ProjectStatus | 'all' }[] = [
+  // Different status filters for different roles
+  const freelancerFilters: { label: string; value: ProjectStatus | 'all' }[] = [
     { label: 'All Projects', value: 'all' },
     { label: 'In Progress', value: 'in_progress' },
     { label: 'In Review', value: 'in_review' },
     { label: 'Approved', value: 'approved' },
     { label: 'Delivered', value: 'delivered' },
   ];
+
+  const clientFilters: { label: string; value: ProjectStatus | 'all' }[] = [
+    { label: 'All', value: 'all' },
+    { label: 'Needs Review', value: 'in_review' },
+    { label: 'In Progress', value: 'in_progress' },
+    { label: 'Approved', value: 'approved' },
+    { label: 'Delivered', value: 'delivered' },
+  ];
+
+  const statusFilters = (userRole === 'client' || userRole === 'client_sub_user')
+    ? clientFilters
+    : freelancerFilters;
 
   const filteredProjects = mockProjects.filter((project) => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,21 +152,42 @@ const ProjectsPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={700} gutterBottom>
-            Projects
+            {config.title}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage all your client projects in one place
+            {config.subtitle}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => navigate('/projects/new')}
-          sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}
-        >
-          New Project
-        </Button>
+        {config.canCreate && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => navigate('/projects/new')}
+            sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}
+          >
+            New Project
+          </Button>
+        )}
       </Box>
+
+      {/* Role-specific alerts */}
+      {userRole === 'client' && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          You have {mockProjects.filter(p => p.pendingApprovals > 0).length} projects with pending deliverables awaiting your review.
+        </Alert>
+      )}
+
+      {userRole === 'client_sub_user' && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          You're viewing as a reviewer. You can view projects and add comments, but approval actions are handled by the primary client.
+        </Alert>
+      )}
+
+      {userRole === 'team_member' && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          These are projects assigned to you. Upload deliverables and track progress here.
+        </Alert>
+      )}
 
       {/* Filters */}
       <Box
@@ -160,10 +250,12 @@ const ProjectsPage: React.FC = () => {
           description={
             searchQuery
               ? `No projects match "${searchQuery}". Try a different search.`
-              : 'Create your first project to get started.'
+              : config.canCreate
+              ? 'Create your first project to get started.'
+              : 'No projects have been shared with you yet.'
           }
           action={
-            !searchQuery
+            !searchQuery && config.canCreate
               ? { label: 'Create Project', onClick: () => navigate('/projects/new') }
               : undefined
           }
@@ -223,20 +315,39 @@ const ProjectsPage: React.FC = () => {
                       {project.name}
                     </Typography>
 
-                    {/* Client */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        mb: 3,
-                      }}
-                    >
-                      <UserAvatar name={project.clientName} size="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        {project.clientName}
-                      </Typography>
-                    </Box>
+                    {/* Client - Only show for freelancer and team member */}
+                    {(userRole === 'freelancer' || userRole === 'team_member') && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          mb: 3,
+                        }}
+                      >
+                        <UserAvatar name={project.clientName} size="small" />
+                        <Typography variant="body2" color="text.secondary">
+                          {project.clientName}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {/* Freelancer info - Only show for clients */}
+                    {(userRole === 'client' || userRole === 'client_sub_user') && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          mb: 3,
+                        }}
+                      >
+                        <UserAvatar name="Alex Morgan" size="small" />
+                        <Typography variant="body2" color="text.secondary">
+                          Morgan Design Studio
+                        </Typography>
+                      </Box>
+                    )}
 
                     {/* Stats */}
                     <Box
@@ -257,7 +368,7 @@ const ProjectsPage: React.FC = () => {
                       </Box>
                       <Box>
                         <Typography variant="caption" color="text.secondary">
-                          Pending
+                          {config.canApprove ? 'To Review' : 'Pending'}
                         </Typography>
                         <Typography
                           variant="subtitle1"
@@ -269,37 +380,39 @@ const ProjectsPage: React.FC = () => {
                       </Box>
                     </Box>
 
-                    {/* Payment Progress */}
-                    <Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 1,
-                        }}
-                      >
-                        <Typography variant="caption" color="text.secondary">
-                          Payment Progress
-                        </Typography>
-                        <Typography variant="caption" fontWeight={600}>
-                          {formatCurrency(project.paidAmount)} / {formatCurrency(project.totalValue)}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={progressPercent}
-                        sx={{
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: alpha(theme.palette.success.main, 0.1),
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: 'success.main',
+                    {/* Payment Progress - Only for roles that can see it */}
+                    {config.showPaymentProgress && (
+                      <Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 1,
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            Payment Progress
+                          </Typography>
+                          <Typography variant="caption" fontWeight={600}>
+                            {formatCurrency(project.paidAmount)} / {formatCurrency(project.totalValue)}
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={progressPercent}
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                          },
-                        }}
-                      />
-                    </Box>
+                            backgroundColor: alpha(theme.palette.success.main, 0.1),
+                            '& .MuiLinearProgress-bar': {
+                              backgroundColor: 'success.main',
+                              borderRadius: 3,
+                            },
+                          }}
+                        />
+                      </Box>
+                    )}
 
                     {/* Footer */}
                     <Box
@@ -315,12 +428,28 @@ const ProjectsPage: React.FC = () => {
                       <Typography variant="caption" color="text.secondary">
                         Updated {formatRelativeTime(project.updatedAt)}
                       </Typography>
-                      <Chip
-                        label={`${progressPercent}% paid`}
-                        size="small"
-                        color={progressPercent >= 100 ? 'success' : 'default'}
-                        sx={{ fontSize: '0.6875rem' }}
-                      />
+                      {config.showPaymentProgress ? (
+                        <Chip
+                          label={`${progressPercent}% paid`}
+                          size="small"
+                          color={progressPercent >= 100 ? 'success' : 'default'}
+                          sx={{ fontSize: '0.6875rem' }}
+                        />
+                      ) : project.pendingApprovals > 0 ? (
+                        <Chip
+                          label="Needs Review"
+                          size="small"
+                          color="warning"
+                          sx={{ fontSize: '0.6875rem' }}
+                        />
+                      ) : (
+                        <Chip
+                          label="Up to date"
+                          size="small"
+                          color="success"
+                          sx={{ fontSize: '0.6875rem' }}
+                        />
+                      )}
                     </Box>
                   </CardContent>
                 </Card>
@@ -330,7 +459,7 @@ const ProjectsPage: React.FC = () => {
         </Grid>
       )}
 
-      {/* Context Menu */}
+      {/* Context Menu - Role-based actions */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -349,24 +478,64 @@ const ProjectsPage: React.FC = () => {
           </ListItemIcon>
           <ListItemText>View</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <ListItemIcon>
-            <Edit fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <ListItemIcon>
-            <Archive fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Archive</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
-            <Delete fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
+
+        {/* Client approval actions */}
+        {config.canApprove && (
+          <>
+            <MenuItem onClick={handleMenuClose}>
+              <ListItemIcon>
+                <ThumbUp fontSize="small" color="success" />
+              </ListItemIcon>
+              <ListItemText>Approve All</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleMenuClose}>
+              <ListItemIcon>
+                <ThumbDown fontSize="small" color="error" />
+              </ListItemIcon>
+              <ListItemText>Request Changes</ListItemText>
+            </MenuItem>
+          </>
+        )}
+
+        {/* Comment action for client sub user */}
+        {userRole === 'client_sub_user' && (
+          <MenuItem onClick={handleMenuClose}>
+            <ListItemIcon>
+              <Comment fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Add Comment</ListItemText>
+          </MenuItem>
+        )}
+
+        {/* Edit action */}
+        {config.canEdit && (
+          <MenuItem onClick={handleMenuClose}>
+            <ListItemIcon>
+              <Edit fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>
+        )}
+
+        {/* Archive action - freelancer only */}
+        {userRole === 'freelancer' && (
+          <MenuItem onClick={handleMenuClose}>
+            <ListItemIcon>
+              <Archive fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Archive</ListItemText>
+          </MenuItem>
+        )}
+
+        {/* Delete action */}
+        {config.canDelete && (
+          <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
+            <ListItemIcon>
+              <Delete fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
     </Box>
   );
