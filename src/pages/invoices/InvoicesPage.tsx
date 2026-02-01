@@ -40,7 +40,7 @@ import { mockInvoices } from '../../data/mockData';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { PaymentStatus, UserRole } from '../../types';
 
-// Role-based page configuration
+// Role-based page configuration - MVP: 2 roles only (Freelancer + Client)
 const pageConfig: Record<UserRole, {
   title: string;
   subtitle: string;
@@ -74,28 +74,6 @@ const pageConfig: Record<UserRole, {
     canPay: true,
     showSummary: true,
   },
-  team_member: {
-    title: 'Invoices',
-    subtitle: 'View invoice history',
-    canCreate: false,
-    canEdit: false,
-    canDelete: false,
-    canMarkPaid: false,
-    canSendReminder: false,
-    canPay: false,
-    showSummary: false,
-  },
-  client_sub_user: {
-    title: 'Invoices',
-    subtitle: 'View invoice status',
-    canCreate: false,
-    canEdit: false,
-    canDelete: false,
-    canMarkPaid: false,
-    canSendReminder: false,
-    canPay: false,
-    showSummary: false,
-  },
 };
 
 const InvoicesPage: React.FC = () => {
@@ -124,9 +102,7 @@ const InvoicesPage: React.FC = () => {
     { label: 'Paid', value: 'paid' },
   ];
 
-  const statusFilters = (userRole === 'client' || userRole === 'client_sub_user')
-    ? clientFilters
-    : freelancerFilters;
+  const statusFilters = userRole === 'client' ? clientFilters : freelancerFilters;
 
   const filteredInvoices = mockInvoices.filter((invoice) => {
     const matchesSearch =
@@ -182,18 +158,6 @@ const InvoicesPage: React.FC = () => {
           }
         >
           You have {formatCurrency(totalPending)} in outstanding invoices. Pay now to avoid late fees.
-        </Alert>
-      )}
-
-      {userRole === 'team_member' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          You have view-only access to invoices. Contact the account owner for billing actions.
-        </Alert>
-      )}
-
-      {userRole === 'client_sub_user' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          You can view invoice status. Payment actions are handled by the primary account holder.
         </Alert>
       )}
 
@@ -298,9 +262,9 @@ const InvoicesPage: React.FC = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Invoice</TableCell>
-                    {/* Show Client column for freelancer/team, show Freelancer for clients */}
+                    {/* Show Client column for freelancer, show Freelancer for clients */}
                     <TableCell>
-                      {(userRole === 'client' || userRole === 'client_sub_user') ? 'From' : 'Client'}
+                      {userRole === 'client' ? 'From' : 'Client'}
                     </TableCell>
                     <TableCell>Project</TableCell>
                     <TableCell>Amount</TableCell>
@@ -321,10 +285,7 @@ const InvoicesPage: React.FC = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {(userRole === 'client' || userRole === 'client_sub_user')
-                          ? 'Morgan Design Studio'
-                          : invoice.clientName
-                        }
+                        {userRole === 'client' ? 'Morgan Design Studio' : invoice.clientName}
                       </TableCell>
                       <TableCell>{invoice.projectName}</TableCell>
                       <TableCell>

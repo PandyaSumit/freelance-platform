@@ -29,7 +29,6 @@ import {
   Archive,
   ThumbUp,
   ThumbDown,
-  Comment,
 } from '@mui/icons-material';
 import { SearchInput, UserAvatar, StatusBadge, EmptyState } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
@@ -37,7 +36,7 @@ import { mockProjects } from '../../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../../utils/helpers';
 import { ProjectStatus, UserRole } from '../../types';
 
-// Role-based page configuration
+// Role-based page configuration - MVP: 2 roles only (Freelancer + Client)
 const pageConfig: Record<UserRole, {
   title: string;
   subtitle: string;
@@ -64,24 +63,6 @@ const pageConfig: Record<UserRole, {
     canDelete: false,
     canApprove: true,
     showPaymentProgress: true,
-  },
-  team_member: {
-    title: 'Assigned Projects',
-    subtitle: 'View and collaborate on team projects',
-    canCreate: false,
-    canEdit: true,
-    canDelete: false,
-    canApprove: false,
-    showPaymentProgress: false,
-  },
-  client_sub_user: {
-    title: 'Shared Projects',
-    subtitle: 'Review project progress and add comments',
-    canCreate: false,
-    canEdit: false,
-    canDelete: false,
-    canApprove: false,
-    showPaymentProgress: false,
   },
 };
 
@@ -114,9 +95,7 @@ const ProjectsPage: React.FC = () => {
     { label: 'Delivered', value: 'delivered' },
   ];
 
-  const statusFilters = (userRole === 'client' || userRole === 'client_sub_user')
-    ? clientFilters
-    : freelancerFilters;
+  const statusFilters = userRole === 'client' ? clientFilters : freelancerFilters;
 
   const filteredProjects = mockProjects.filter((project) => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -174,18 +153,6 @@ const ProjectsPage: React.FC = () => {
       {userRole === 'client' && (
         <Alert severity="info" sx={{ mb: 3 }}>
           You have {mockProjects.filter(p => p.pendingApprovals > 0).length} projects with pending deliverables awaiting your review.
-        </Alert>
-      )}
-
-      {userRole === 'client_sub_user' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          You're viewing as a reviewer. You can view projects and add comments, but approval actions are handled by the primary client.
-        </Alert>
-      )}
-
-      {userRole === 'team_member' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          These are projects assigned to you. Upload deliverables and track progress here.
         </Alert>
       )}
 
@@ -315,8 +282,8 @@ const ProjectsPage: React.FC = () => {
                       {project.name}
                     </Typography>
 
-                    {/* Client - Only show for freelancer and team member */}
-                    {(userRole === 'freelancer' || userRole === 'team_member') && (
+                    {/* Client - Only show for freelancer */}
+                    {userRole === 'freelancer' && (
                       <Box
                         sx={{
                           display: 'flex',
@@ -333,7 +300,7 @@ const ProjectsPage: React.FC = () => {
                     )}
 
                     {/* Freelancer info - Only show for clients */}
-                    {(userRole === 'client' || userRole === 'client_sub_user') && (
+                    {userRole === 'client' && (
                       <Box
                         sx={{
                           display: 'flex',
@@ -495,16 +462,6 @@ const ProjectsPage: React.FC = () => {
               <ListItemText>Request Changes</ListItemText>
             </MenuItem>
           </>
-        )}
-
-        {/* Comment action for client sub user */}
-        {userRole === 'client_sub_user' && (
-          <MenuItem onClick={handleMenuClose}>
-            <ListItemIcon>
-              <Comment fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Add Comment</ListItemText>
-          </MenuItem>
         )}
 
         {/* Edit action */}

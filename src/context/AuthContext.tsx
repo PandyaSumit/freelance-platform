@@ -11,7 +11,7 @@ interface User {
   company?: string;
 }
 
-// Demo credentials for all roles
+// Demo credentials - MVP: 2 roles only (Freelancer + Client)
 export const DEMO_USERS: Record<UserRole, User & { password: string }> = {
   freelancer: {
     id: 'user-freelancer-001',
@@ -27,22 +27,6 @@ export const DEMO_USERS: Record<UserRole, User & { password: string }> = {
     password: 'Demo1234',
     fullName: 'Sarah Johnson',
     role: 'client',
-    company: 'TechCorp Inc.',
-  },
-  team_member: {
-    id: 'user-team-001',
-    email: 'team@flowlance.com',
-    password: 'Demo1234',
-    fullName: 'Jordan Lee',
-    role: 'team_member',
-    businessName: 'Morgan Design Studio',
-  },
-  client_sub_user: {
-    id: 'user-client-sub-001',
-    email: 'reviewer@company.com',
-    password: 'Demo1234',
-    fullName: 'Mike Chen',
-    role: 'client_sub_user',
     company: 'TechCorp Inc.',
   },
 };

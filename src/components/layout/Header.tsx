@@ -35,12 +35,10 @@ import { useApp } from '../../context/AppContext';
 import { formatRelativeTime } from '../../utils/helpers';
 import { UserRole } from '../../types';
 
-// Role display configuration
+// Role display configuration - MVP: 2 roles only
 const roleDisplayConfig: Record<UserRole, { label: string; color: string }> = {
   freelancer: { label: 'Owner', color: '#6366F1' },
   client: { label: 'Client', color: '#10B981' },
-  team_member: { label: 'Team', color: '#F59E0B' },
-  client_sub_user: { label: 'Reviewer', color: '#8B5CF6' },
 };
 
 const DRAWER_WIDTH = 260;
@@ -222,7 +220,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </ListItemIcon>
             <ListItemText>Profile</ListItemText>
           </MenuItem>
-          {(user?.role === 'freelancer' || user?.role === 'team_member') && (
+          {user?.role === 'freelancer' && (
             <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
               <ListItemIcon>
                 <Settings fontSize="small" />

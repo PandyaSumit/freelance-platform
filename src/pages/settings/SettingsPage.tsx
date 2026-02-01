@@ -16,7 +16,6 @@ import {
   Avatar,
   IconButton,
   Chip,
-  Alert,
 } from '@mui/material';
 import { CameraAlt, ContentCopy } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +40,7 @@ interface SettingsTab {
   key: string;
 }
 
+// MVP: 2 roles only (Freelancer + Client)
 const roleTabsConfig: Record<UserRole, SettingsTab[]> = {
   freelancer: [
     { label: 'Profile', key: 'profile' },
@@ -51,13 +51,6 @@ const roleTabsConfig: Record<UserRole, SettingsTab[]> = {
   client: [
     { label: 'Profile', key: 'profile' },
     { label: 'Notifications', key: 'notifications' },
-  ],
-  team_member: [
-    { label: 'Profile', key: 'profile' },
-    { label: 'Notifications', key: 'notifications' },
-  ],
-  client_sub_user: [
-    { label: 'Profile', key: 'profile' },
   ],
 };
 
@@ -75,16 +68,6 @@ const rolePageConfig: Record<UserRole, {
     title: 'Account Settings',
     subtitle: 'Manage your profile and notifications',
     canEditProfile: true,
-  },
-  team_member: {
-    title: 'Settings',
-    subtitle: 'Manage your profile and notifications',
-    canEditProfile: true,
-  },
-  client_sub_user: {
-    title: 'Profile',
-    subtitle: 'View your account information',
-    canEditProfile: false,
   },
 };
 
@@ -122,22 +105,8 @@ const SettingsPage: React.FC = () => {
     { key: 'weeklySummary', label: 'Weekly project updates', description: 'Receive a weekly summary of project progress' },
   ];
 
-  const teamMemberNotifications = [
-    { key: 'emailOnApproval', label: 'When work is approved', description: 'Get notified when clients approve deliverables' },
-    { key: 'emailOnChangesRequested', label: 'When changes are requested', description: 'Get feedback notifications instantly' },
-    { key: 'weeklySummary', label: 'Weekly summary', description: 'Receive a weekly digest of all activity' },
-  ];
-
   const getNotificationOptions = () => {
-    switch (userRole) {
-      case 'client':
-      case 'client_sub_user':
-        return clientNotifications;
-      case 'team_member':
-        return teamMemberNotifications;
-      default:
-        return freelancerNotifications;
-    }
+    return userRole === 'client' ? clientNotifications : freelancerNotifications;
   };
 
   return (
@@ -151,19 +120,6 @@ const SettingsPage: React.FC = () => {
           {pageConfig.subtitle}
         </Typography>
       </Box>
-
-      {/* Role-specific alerts */}
-      {userRole === 'client_sub_user' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          You have view-only access. Contact the primary account holder to make changes.
-        </Alert>
-      )}
-
-      {userRole === 'team_member' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Some settings are managed by the account owner. Contact them for billing or branding changes.
-        </Alert>
-      )}
 
       {/* Settings Card */}
       <Card>
@@ -247,17 +203,17 @@ const SettingsPage: React.FC = () => {
                     disabled={!pageConfig.canEditProfile}
                   />
                 </Grid>
-                {(userRole === 'freelancer' || userRole === 'team_member') && (
+                {userRole === 'freelancer' && (
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       label="Business Name"
                       defaultValue={user?.businessName || currentUser.businessName}
-                      disabled={!pageConfig.canEditProfile || userRole === 'team_member'}
+                      disabled={!pageConfig.canEditProfile}
                     />
                   </Grid>
                 )}
-                {(userRole === 'client' || userRole === 'client_sub_user') && (
+                {userRole === 'client' && (
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth

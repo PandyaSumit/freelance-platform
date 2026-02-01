@@ -1,5 +1,5 @@
-// User types
-export type UserRole = 'freelancer' | 'client' | 'team_member' | 'client_sub_user';
+// User types - MVP: Only 2 roles
+export type UserRole = 'freelancer' | 'client';
 export type FreelanceCategory = 'design' | 'development' | 'writing' | 'consulting' | 'marketing' | 'other';
 
 export interface User {

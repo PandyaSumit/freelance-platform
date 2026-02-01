@@ -133,61 +133,58 @@ src/
 
 ## User Roles & Permissions
 
-### Role Definitions
+### Role Definitions (MVP: 2 Roles)
 
 | Role | Description |
 |------|-------------|
 | **Freelancer** | Platform owner with full access to all features |
 | **Client** | External client who reviews work and pays invoices |
-| **Team Member** | Freelancer's team with limited access |
-| **Client Sub User** | Client's team member with view-only access |
 
 ### Permission Matrix
 
-| Feature | Freelancer | Client | Team Member | Client Reviewer |
-|---------|:----------:|:------:|:-----------:|:---------------:|
+| Feature | Freelancer | Client |
+|---------|:----------:|:------:|
 | **Dashboard** |
-| View full stats | ✅ | ❌ | ❌ | ❌ |
-| View revenue data | ✅ | ❌ | ❌ | ❌ |
-| View pending approvals | ✅ | ✅ | ✅ | ✅ |
-| Quick actions | ✅ | ❌ | ❌ | ❌ |
+| View full stats | ✅ | ❌ |
+| View revenue data | ✅ | ❌ |
+| View pending approvals | ✅ | ✅ |
+| Quick actions | ✅ | ❌ |
 | **Projects** |
-| Create project | ✅ | ❌ | ❌ | ❌ |
-| Edit project | ✅ | ❌ | ✅ | ❌ |
-| Delete project | ✅ | ❌ | ❌ | ❌ |
-| Archive project | ✅ | ❌ | ❌ | ❌ |
-| Approve deliverables | ❌ | ✅ | ❌ | ❌ |
-| Request changes | ❌ | ✅ | ❌ | ❌ |
-| Add comments | ✅ | ✅ | ✅ | ✅ |
-| Upload deliverables | ✅ | ❌ | ✅ | ❌ |
+| Create project | ✅ | ❌ |
+| Edit project | ✅ | ❌ |
+| Delete project | ✅ | ❌ |
+| Archive project | ✅ | ❌ |
+| Approve deliverables | ❌ | ✅ |
+| Request changes | ❌ | ✅ |
+| Upload deliverables | ✅ | ❌ |
 | **Clients** |
-| View clients | ✅ | ❌ | ✅ | ❌ |
-| Add client | ✅ | ❌ | ❌ | ❌ |
-| Edit client | ✅ | ❌ | ❌ | ❌ |
-| Delete client | ✅ | ❌ | ❌ | ❌ |
-| View revenue | ✅ | ❌ | ❌ | ❌ |
+| View clients | ✅ | ❌ |
+| Add client | ✅ | ❌ |
+| Edit client | ✅ | ❌ |
+| Delete client | ✅ | ❌ |
+| View revenue | ✅ | ❌ |
 | **Invoices** |
-| Create invoice | ✅ | ❌ | ❌ | ❌ |
-| Edit invoice | ✅ | ❌ | ❌ | ❌ |
-| Delete invoice | ✅ | ❌ | ❌ | ❌ |
-| Send reminder | ✅ | ❌ | ❌ | ❌ |
-| Mark as paid | ✅ | ❌ | ❌ | ❌ |
-| Pay invoice | ❌ | ✅ | ❌ | ❌ |
-| Download PDF | ✅ | ✅ | ✅ | ✅ |
-| View summary | ✅ | ✅ | ❌ | ❌ |
+| Create invoice | ✅ | ❌ |
+| Edit invoice | ✅ | ❌ |
+| Delete invoice | ✅ | ❌ |
+| Send reminder | ✅ | ❌ |
+| Mark as paid | ✅ | ❌ |
+| Pay invoice | ❌ | ✅ |
+| Download PDF | ✅ | ✅ |
+| View summary | ✅ | ✅ |
 | **Settings** |
-| Profile tab | ✅ | ✅ | ✅ | 👁️ |
-| Branding tab | ✅ | ❌ | ❌ | ❌ |
-| Notifications tab | ✅ | ✅ | ✅ | ❌ |
-| Billing tab | ✅ | ❌ | ❌ | ❌ |
+| Profile tab | ✅ | ✅ |
+| Branding tab | ✅ | ❌ |
+| Notifications tab | ✅ | ✅ |
+| Billing tab | ✅ | ❌ |
 
-*Legend: ✅ = Full Access, ❌ = No Access, 👁️ = View Only*
+*Legend: ✅ = Full Access, ❌ = No Access*
 
 ---
 
 ## Authentication System
 
-### Demo Users Configuration
+### Demo Users Configuration (MVP: 2 Roles)
 
 ```typescript
 const DEMO_USERS = {
@@ -205,22 +202,6 @@ const DEMO_USERS = {
     password: 'Demo1234',
     fullName: 'Sarah Johnson',
     role: 'client',
-    company: 'TechCorp Inc.',
-  },
-  team_member: {
-    id: 'user-team-001',
-    email: 'team@flowlance.com',
-    password: 'Demo1234',
-    fullName: 'Jordan Lee',
-    role: 'team_member',
-    businessName: 'Morgan Design Studio',
-  },
-  client_sub_user: {
-    id: 'user-client-sub-001',
-    email: 'reviewer@company.com',
-    password: 'Demo1234',
-    fullName: 'Mike Chen',
-    role: 'client_sub_user',
     company: 'TechCorp Inc.',
   },
 };
@@ -326,14 +307,14 @@ User session is stored in `localStorage` and automatically restored on app load.
 **Features**:
 - Email/password form with validation
 - Social login buttons (Google, Apple - UI only)
-- Demo credential cards for all 4 roles
+- Demo credential cards for 2 MVP roles (Freelancer, Client)
 - One-click login for demo roles
 - Copy credentials button
 - Link to signup and forgot password
 
 ### Dashboard (`/dashboard`)
 
-**Role-Specific Views**:
+**Role-Specific Views (MVP: 2 Roles)**:
 
 **Freelancer Dashboard**:
 - Stats: Active Projects, Pending Approvals, Unpaid Invoices, Monthly Revenue
@@ -346,17 +327,6 @@ User session is stored in `localStorage` and automatically restored on app load.
 - Alert banner for pending approvals
 - Pending Approvals table with Review buttons
 - Outstanding Invoices with Pay Now buttons
-
-**Team Member Dashboard**:
-- Stats: Assigned Projects, Pending Approvals, Completed This Week, Due Today
-- Warning about restricted features
-- Assigned Projects table with Upload buttons
-- Recent Activity feed
-
-**Client Reviewer Dashboard**:
-- Stats: Projects to Review, New Deliverables, Pending Invoices
-- Info alert about view-only access
-- Shared Projects table with View buttons
 
 ### Projects Page (`/projects`)
 
@@ -383,12 +353,10 @@ User session is stored in `localStorage` and automatically restored on app load.
 **Role-Specific Actions**:
 - Freelancer: Upload, Edit, Delete, Create Invoice
 - Client: Approve, Request Changes, Pay Invoice
-- Team Member: Upload, View
-- Client Reviewer: View, Comment
 
 ### Clients Page (`/clients`)
 
-**Access**: Freelancer and Team Member only
+**Access**: Freelancer only
 
 **Features**:
 - Client cards with avatar, contact info, stats
@@ -427,19 +395,17 @@ User session is stored in `localStorage` and automatically restored on app load.
 
 ### Settings Page (`/settings`)
 
-**Tabs by Role**:
+**Tabs by Role (MVP: 2 Roles)**:
 
 | Role | Available Tabs |
 |------|---------------|
 | Freelancer | Profile, Branding, Notifications, Billing |
 | Client | Profile, Notifications |
-| Team Member | Profile, Notifications |
-| Client Reviewer | Profile (view-only) |
 
 **Profile Tab**:
 - Avatar upload
 - Name, email, phone
-- Business name (freelancer/team) or Company (client)
+- Business name (freelancer) or Company (client)
 
 **Branding Tab** (Freelancer only):
 - Logo upload
@@ -583,7 +549,7 @@ const signupSchema = z.object({
 
 ## Demo Credentials
 
-### Quick Access Cards
+### Quick Access Cards (MVP: 2 Roles)
 
 The login page features beautiful role cards for instant demo access:
 
@@ -591,8 +557,6 @@ The login page features beautiful role cards for instant demo access:
 |------|-------|----------|-------|
 | **Freelancer** | freelancer@flowlance.com | Demo1234 | Indigo |
 | **Client** | client@company.com | Demo1234 | Emerald |
-| **Team Member** | team@flowlance.com | Demo1234 | Amber |
-| **Client Reviewer** | reviewer@company.com | Demo1234 | Purple |
 
 ### Features per Card
 

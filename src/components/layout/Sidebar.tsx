@@ -23,8 +23,6 @@ import {
   Settings,
   Close,
   Stars,
-  RateReview,
-  Visibility,
 } from '@mui/icons-material';
 import { Logo } from '../common';
 import { useApp } from '../../context/AppContext';
@@ -38,12 +36,10 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-// Role badge configuration
+// Role badge configuration - MVP: 2 roles only
 const roleBadgeConfig: Record<UserRole, { label: string; color: string }> = {
-  freelancer: { label: 'Owner', color: '#6366F1' },
+  freelancer: { label: 'Freelancer', color: '#6366F1' },
   client: { label: 'Client', color: '#10B981' },
-  team_member: { label: 'Team', color: '#F59E0B' },
-  client_sub_user: { label: 'Reviewer', color: '#8B5CF6' },
 };
 
 // Menu items with role-based access
@@ -64,37 +60,31 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
 
   const userRole = user?.role || 'freelancer';
 
-  // Define menu items with role-based access
+  // Define menu items - MVP: 2 roles only
   const allMenuItems: MenuItem[] = [
     {
       label: 'Dashboard',
       icon: DashboardIcon,
       path: '/dashboard',
-      roles: ['freelancer', 'client', 'team_member', 'client_sub_user'],
+      roles: ['freelancer', 'client'],
     },
     {
       label: 'Projects',
       icon: FolderOpen,
       path: '/projects',
-      roles: ['freelancer', 'client', 'team_member', 'client_sub_user'],
+      roles: ['freelancer', 'client'],
     },
     {
       label: 'Clients',
       icon: People,
       path: '/clients',
-      roles: ['freelancer', 'team_member'],
+      roles: ['freelancer'],
     },
     {
       label: 'Invoices',
       icon: Receipt,
       path: '/invoices',
-      roles: ['freelancer', 'client', 'team_member', 'client_sub_user'],
-    },
-    {
-      label: 'Approvals',
-      icon: RateReview,
-      path: '/projects?filter=pending',
-      roles: ['client'],
+      roles: ['freelancer', 'client'],
     },
   ];
 
@@ -103,13 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       label: 'Settings',
       icon: Settings,
       path: '/settings',
-      roles: ['freelancer', 'client', 'team_member'],
-    },
-    {
-      label: 'View Only',
-      icon: Visibility,
-      path: '/settings',
-      roles: ['client_sub_user'],
+      roles: ['freelancer', 'client'],
     },
   ];
 
@@ -279,8 +263,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         </Box>
       )}
 
-      {/* Client Portal Info - For clients */}
-      {(userRole === 'client' || userRole === 'client_sub_user') && (
+      {/* Client Portal Info */}
+      {userRole === 'client' && (
         <Box sx={{ px: 2, pb: 2 }}>
           <Box
             sx={{
@@ -294,28 +278,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               Client Portal
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              You're viewing as a client. Review deliverables and manage payments here.
-            </Typography>
-          </Box>
-        </Box>
-      )}
-
-      {/* Team Member Info */}
-      {userRole === 'team_member' && (
-        <Box sx={{ px: 2, pb: 2 }}>
-          <Box
-            sx={{
-              p: 2.5,
-              borderRadius: 3,
-              background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.1)} 0%, ${alpha('#F59E0B', 0.05)} 100%)`,
-              border: `1px solid ${alpha('#F59E0B', 0.1)}`,
-            }}
-          >
-            <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#F59E0B', mb: 0.5 }}>
-              Team Access
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              You have team member access. Contact the owner for full permissions.
+              Review deliverables and manage payments here.
             </Typography>
           </Box>
         </Box>

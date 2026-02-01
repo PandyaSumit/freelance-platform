@@ -18,8 +18,6 @@ import {
   DialogActions,
   TextField,
   useTheme,
-  alpha,
-  Alert,
 } from '@mui/material';
 import {
   Add,
@@ -32,44 +30,23 @@ import {
   Business,
 } from '@mui/icons-material';
 import { SearchInput, UserAvatar, EmptyState } from '../../components/common';
-import { useAuth } from '../../context/AuthContext';
 import { mockClients } from '../../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../../utils/helpers';
-import { UserRole } from '../../types';
-
-// Role-based page configuration
-const pageConfig: Record<'freelancer' | 'team_member', {
-  title: string;
-  subtitle: string;
-  canAdd: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  showRevenue: boolean;
-}> = {
-  freelancer: {
-    title: 'Clients',
-    subtitle: 'Manage your client relationships',
-    canAdd: true,
-    canEdit: true,
-    canDelete: true,
-    showRevenue: true,
-  },
-  team_member: {
-    title: 'Clients',
-    subtitle: 'View client information',
-    canAdd: false,
-    canEdit: false,
-    canDelete: false,
-    showRevenue: false,
-  },
+// MVP: ClientsPage is only accessible by freelancers
+// Page configuration for freelancer
+const pageConfig = {
+  title: 'Clients',
+  subtitle: 'Manage your client relationships',
+  canAdd: true,
+  canEdit: true,
+  canDelete: true,
+  showRevenue: true,
 };
 
 const ClientsPage: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const userRole = user?.role as 'freelancer' | 'team_member';
-  const config = pageConfig[userRole] || pageConfig.team_member;
+  const config = pageConfig;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -125,13 +102,6 @@ const ClientsPage: React.FC = () => {
           </Button>
         )}
       </Box>
-
-      {/* Team member notice */}
-      {userRole === 'team_member' && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          You have view-only access to clients. Contact the account owner to add or edit clients.
-        </Alert>
-      )}
 
       {/* Search */}
       <Box sx={{ mb: 3 }}>

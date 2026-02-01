@@ -24,8 +24,6 @@ import {
   Apple,
   Person,
   Business,
-  Groups,
-  SupervisorAccount,
   ContentCopy,
   CheckCircle,
 } from '@mui/icons-material';
@@ -35,7 +33,7 @@ import { loginSchema, LoginFormValues } from '../../utils/validationSchemas';
 import { useAuth, DEMO_USERS } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 
-// Role configuration for demo cards
+// Role configuration for demo cards - MVP: 2 roles only
 const roleConfig: Record<UserRole, {
   label: string;
   description: string;
@@ -56,20 +54,6 @@ const roleConfig: Record<UserRole, {
     icon: <Business />,
     color: '#10B981',
     features: ['View projects', 'Approve deliverables', 'Pay invoices', 'Leave feedback'],
-  },
-  team_member: {
-    label: 'Team Member',
-    description: 'Collaborate on projects',
-    icon: <Groups />,
-    color: '#F59E0B',
-    features: ['View projects', 'Upload files', 'View clients', 'Limited settings'],
-  },
-  client_sub_user: {
-    label: 'Client Reviewer',
-    description: 'Review & comment only',
-    icon: <SupervisorAccount />,
-    color: '#8B5CF6',
-    features: ['View projects', 'Add comments', 'View invoices', 'No approvals'],
   },
 };
 
